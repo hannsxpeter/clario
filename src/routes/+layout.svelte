@@ -1,10 +1,12 @@
 <script lang="ts">
 	import '../app.css';
 	import { setupConvex } from 'convex-svelte';
-	import { PUBLIC_CONVEX_URL } from '$env/static/public';
+	import { env } from '$env/dynamic/public';
 	import Icon from '$lib/components/Icon.svelte';
 
-	setupConvex(PUBLIC_CONVEX_URL);
+	// Dynamic public env reads at runtime, so a missing var never breaks the build.
+	// Falls back to the project's Convex deployment so the app works with zero config.
+	setupConvex(env.PUBLIC_CONVEX_URL || 'https://accurate-caribou-260.convex.cloud');
 
 	let { children } = $props();
 </script>
