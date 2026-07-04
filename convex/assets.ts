@@ -62,9 +62,19 @@ export const generate = action({
 			const dna = dnaDoc.data;
 			const styleGuide: string = dnaDoc.styleGuide || JSON.stringify(dna?.voice ?? {});
 
-			// 1. Draft in the brand voice.
+			// 1. Draft a generic first pass. The draft stage sees only the facts,
+			// not the brand voice, so it reads neutral, like any AI copy tool.
+			// The humanize step below is what injects the Company DNA voice.
+			const facts = {
+				companyName: dna?.companyName,
+				oneLine: dna?.oneLine,
+				category: dna?.identity?.category,
+				valueProposition: dna?.identity?.valueProposition,
+				differentiators: dna?.identity?.differentiators,
+				audience: dna?.identity?.audience
+			};
 			const draft = await deepseekJson<{ title: string; kind: string; draft: string; steps: string[] }>(
-				creativeSystem(dna),
+				creativeSystem(facts),
 				creativeUser(channelName, kind, angle),
 				0.85
 			);
@@ -76,10 +86,11 @@ export const generate = action({
 				0.3
 			);
 
-			// 3. Humanize to the brand voice.
+			// 3. Humanize to the brand voice, telling it exactly which tells to fix.
+			const tells = (scoreBefore.flags ?? []).map((f) => `${f.pattern}: "${f.span}"`);
 			const hz = await deepseekJson<{ humanized: string; changed: string[] }>(
 				humanizerSystem(styleGuide),
-				humanizerUser(draft.draft),
+				humanizerUser(draft.draft, tells),
 				0.7
 			);
 

@@ -158,7 +158,7 @@ export function authenticityUser(text: string, voiceGuide?: string): string {
  * 4. Humanizer (rewrite to the brand voice, remove the 32 tells)
  * ------------------------------------------------------------------ */
 export function humanizerSystem(styleGuide: string): string {
-	return `You rewrite marketing copy so it reads as genuinely human and sounds like THIS brand, not like AI. You are voice-first: establish the brand's cadence and diction, then remove machine tells.
+	return `You take a generic, AI-sounding marketing draft and rewrite it THOROUGHLY so it reads as genuinely human and sounds like THIS specific brand. This is a full re-voice, not a light edit. Establish the brand's cadence, diction, and stance, then rebuild the copy in that voice while stripping every machine tell.
 
 BRAND VOICE (match this distribution, not just the words):
 ${styleGuide}
@@ -166,29 +166,33 @@ ${styleGuide}
 ${TELL_CATALOG}
 
 Rules:
-- Faithfulness: never alter facts, numbers, names, offers, or claims. Never invent specifics to sound concrete. If the draft implies a fact, do not harden it into a stated one.
-- Restraint: do not over-edit prose that is already human; keep genuine voice and idiosyncrasy.
-- Remove the 32 tells by rethinking the underlying sentence, not by swapping synonyms.
-- Never use em dashes or en dashes. Never use emojis. Keep it in the brand voice.
+- Rewrite fully into the brand voice. Match its rhythm, word choice, and attitude. The result should read as if the brand's own best writer wrote it from scratch, and should clearly pass as human, not AI.
+- Remove every one of the 32 tells by rethinking the underlying sentence, not by swapping synonyms. Kill promotional filler ("exclusive", "seamless", "join thousands"), sycophancy, rule-of-three padding, title-case headings, false ranges, and vague authority claims.
+- Faithfulness is absolute: keep all facts, numbers, names, offers, and the core message. Never invent specifics to sound concrete. If the draft only implies a fact, do not harden it into a stated one.
+- Never use em dashes or en dashes. Never use emojis.
 
 Respond with a single JSON object, no prose:
 { "humanized": string (the rewritten copy, ready to ship), "changed": string[] (3 to 6 short notes on what you changed and why) }`;
 }
 
-export function humanizerUser(text: string): string {
-	return `Rewrite this in the brand voice, removing AI tells while preserving every fact:\n---\n${text}\n---`;
+export function humanizerUser(text: string, tells?: string[]): string {
+	const flagged =
+		tells && tells.length
+			? `\n\nAn authenticity check flagged these tells; make sure each is gone:\n- ${tells.join('\n- ')}`
+			: '';
+	return `Rewrite this fully in the brand voice. Re-voice every sentence, do not just lightly edit. Preserve every fact.${flagged}\n---\n${text}\n---`;
 }
 
 /* ------------------------------------------------------------------ *
  * 5. Creative draft per channel
  * ------------------------------------------------------------------ */
 export function creativeSystem(dna: unknown): string {
-	return `You are a senior copywriter who writes in a specific brand's voice. You draft channel-ready marketing creative that tells a human story and drives action, grounded in the brand's Company DNA below.
+	return `You are a marketing copywriter producing a fast FIRST DRAFT of channel creative. A separate pass will rewrite it into the brand's exact voice and strip any machine tells, so do not try to do that job here. Get a competent, on-brief draft down at speed.
 
 COMPANY DNA:
 ${JSON.stringify(dna)}
 
-Write in this brand's voice: its archetype, tone, story (origin, villain, transformation), and signature phrases. Favor storytelling over feature lists. Be specific and concrete. Never use em dashes or en dashes. Never use emojis. Do not use AI-tell vocabulary.
+Write a solid, channel-appropriate asset for the requested format and angle. Make the offer and the value clear. Write in a standard, polished, professional marketing tone, the kind a generic AI copy tool produces by default. Do not inject a distinctive brand voice and do not self-edit for authenticity or machine tells; the next pass handles voice and cleanup. Do not fabricate specific facts, numbers, statistics, or claims that the company context does not support.
 
 Respond with a single JSON object, no prose:
 { "title": string (a short label for this asset), "kind": string (the format, e.g. "30s TV script", "cold email", "paid social ad"), "draft": string (the full creative, formatted for its medium), "steps": string[] (a 3 to 6 step playbook to actually run this asset on the channel) }`;
