@@ -60,7 +60,9 @@ async function call(messages: Msg[], opts: { json?: boolean; temperature?: numbe
 			};
 			const content = json.choices?.[0]?.message?.content;
 			if (!content) throw new Error('DeepSeek returned an empty completion.');
-			return content;
+			// House rule: strip em and en dashes from all output. It is also AI-tell
+			// pattern 22, so the product should never emit them.
+			return content.replace(/\s*[\u2014\u2013]\s*/g, ' - ');
 		} catch (err) {
 			lastErr = err;
 			await sleep(500 * (attempt + 1));
