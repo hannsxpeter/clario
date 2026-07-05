@@ -142,9 +142,16 @@
 	.foot-links a:hover {
 		color: var(--color-accent);
 	}
-	@media (max-width: 560px) {
+	@media (max-width: 620px) {
+		.site-head {
+			flex-wrap: wrap;
+			gap: 0.7rem 1rem;
+		}
+		.nav {
+			gap: 0.9rem;
+		}
 		.nav-link {
-			display: none;
+			font-size: 0.85rem;
 		}
 	}
 </style>
