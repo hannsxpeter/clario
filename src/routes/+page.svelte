@@ -78,6 +78,7 @@
 		<h2 class="display-lg">Every channel. Your voice. Scored for authenticity.</h2>
 		<p>TV, radio, search, social, native, email, SMS, SEO, GEO, community, and more. Recommended budget, honest ROI ranges, KPIs, and three-plus humanized creative ideas per channel.</p>
 		<a href="/new" class="btn btn-primary big"><Icon name="dna" size={18} /> Start sequencing</a>
+		<a href="/mcp" class="minor-link" style="justify-content:center"><Icon name="bolt" size={14} /> Or add Clario to your editor as an MCP server</a>
 	</div>
 </section>
 

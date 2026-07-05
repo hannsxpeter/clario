@@ -26,6 +26,7 @@
 		</a>
 		<nav class="nav">
 			<a href="/check" class="nav-link">Slop check</a>
+			<a href="/mcp" class="nav-link">MCP</a>
 			<a href="/#how" class="nav-link">How it works</a>
 			<a href="/new" class="btn btn-primary new-btn">
 				<Icon name="sparkle" size={16} /> Sequence a brand
@@ -39,8 +40,15 @@
 
 	<footer class="site-foot">
 		<div class="foot-inner">
-			<span class="font-display foot-word">Clario</span>
-			<span class="foot-tag">Humanize marketing. Every asset written in your Company DNA.</span>
+			<div class="foot-brand">
+				<span class="font-display foot-word">Clario</span>
+				<span class="foot-tag">Humanize marketing. Every asset written in your Company DNA.</span>
+			</div>
+			<nav class="foot-links">
+				<a href="/new">Sequence a brand</a>
+				<a href="/check">Slop meter</a>
+				<a href="/mcp">MCP server</a>
+			</nav>
 		</div>
 	</footer>
 </div>
@@ -105,6 +113,13 @@
 		padding: 2rem clamp(1rem, 4vw, 2.5rem);
 		display: flex;
 		align-items: baseline;
+		justify-content: space-between;
+		gap: 1.5rem;
+		flex-wrap: wrap;
+	}
+	.foot-brand {
+		display: flex;
+		align-items: baseline;
 		gap: 1rem;
 		flex-wrap: wrap;
 	}
@@ -114,6 +129,18 @@
 	.foot-tag {
 		color: var(--color-ink-muted);
 		font-size: 0.9rem;
+	}
+	.foot-links {
+		display: flex;
+		gap: 1.2rem;
+	}
+	.foot-links a {
+		color: var(--color-ink-soft);
+		text-decoration: none;
+		font-size: 0.9rem;
+	}
+	.foot-links a:hover {
+		color: var(--color-accent);
 	}
 	@media (max-width: 560px) {
 		.nav-link {
