@@ -55,6 +55,13 @@
 		}
 	}
 
+	function setMode(m: 'human' | 'agent') {
+		mode = m;
+		result = null;
+		agentResult = null;
+		error = '';
+	}
+
 	async function copy() {
 		if (!result) return;
 		try {
@@ -79,8 +86,8 @@
 				: 'Paste any ad, email, or landing copy. Clario scores it for authenticity, then rewrites it to read human, using the same engine that powers the full tool.'}
 		</p>
 		<div class="mode">
-			<button class="mode-btn" class:on={mode === 'human'} onclick={() => (mode = 'human')}>Human authenticity</button>
-			<button class="mode-btn" class:on={mode === 'agent'} onclick={() => (mode = 'agent')}>Agent readiness</button>
+			<button class="mode-btn" class:on={mode === 'human'} onclick={() => setMode('human')}>Human authenticity</button>
+			<button class="mode-btn" class:on={mode === 'agent'} onclick={() => setMode('agent')}>Agent readiness</button>
 		</div>
 	</div>
 

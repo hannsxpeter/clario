@@ -96,6 +96,14 @@
 	function copyText(t: string) {
 		navigator.clipboard?.writeText(t);
 	}
+
+	function pretty(s: string): string {
+		try {
+			return JSON.stringify(JSON.parse(s), null, 2);
+		} catch {
+			return s;
+		}
+	}
 </script>
 
 {#if q.isLoading && !q.data}
@@ -213,8 +221,8 @@
 					{@const pack = arPack}
 					<div class="ar-grid">
 						<div class="ar-block card-flat">
-							<div class="ar-bhead"><span class="ar-h">JSON-LD schema</span><button class="ar-copy" onclick={() => copyText(pack.schema)} aria-label="Copy schema"><Icon name="copy" size={13} /></button></div>
-							<pre class="ar-code">{pack.schema}</pre>
+							<div class="ar-bhead"><span class="ar-h">JSON-LD schema</span><button class="ar-copy" onclick={() => copyText(pretty(pack.schema))} aria-label="Copy schema"><Icon name="copy" size={13} /></button></div>
+							<pre class="ar-code">{pretty(pack.schema)}</pre>
 						</div>
 						<div class="ar-block card-flat">
 							<span class="ar-h">Answer-engine FAQ</span>
@@ -225,8 +233,8 @@
 							</div>
 						</div>
 						<div class="ar-block card-flat">
-							<div class="ar-bhead"><span class="ar-h">Machine-readable offer feed</span><button class="ar-copy" onclick={() => copyText(pack.offerFeed)} aria-label="Copy feed"><Icon name="copy" size={13} /></button></div>
-							<pre class="ar-code">{pack.offerFeed}</pre>
+							<div class="ar-bhead"><span class="ar-h">Machine-readable offer feed</span><button class="ar-copy" onclick={() => copyText(pretty(pack.offerFeed))} aria-label="Copy feed"><Icon name="copy" size={13} /></button></div>
+							<pre class="ar-code">{pretty(pack.offerFeed)}</pre>
 						</div>
 						{#if pack.notes?.length}
 							<div class="ar-block card-flat">

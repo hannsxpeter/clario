@@ -19,9 +19,12 @@ From that, Clario:
 3. **Generates humanized creative.** On any channel, Clario drafts an asset, scores it for authenticity, rewrites it into the brand's voice to strip AI tells, and re-scores it. You watch the authenticity score climb from "Reads AI" to "Reads human," with a playbook to run it.
 4. **Exports.** A full marketing plan (Markdown) and a branded pitch deck (PPTX), one click each. Any humanized asset can also be exported straight into **Google RSA, Meta, and Taboola** field formats, with live character-count checks a media buyer can paste in directly.
 
-Two extra ways in:
-- **Slop meter (`/check`).** Paste any existing ad, email, or landing copy and get an instant authenticity score, the exact AI tells found, and a humanized rewrite. No project needed.
-- **MCP server (`mcp/`).** The humanize and authenticity-score capabilities are also exposed as Model Context Protocol tools, so any AI coding agent (Claude Code, Cursor) can call `humanize` and `authenticity_score` directly. This is the "MCP connector" thread made real.
+5. **Campaign agent.** One click, and Clario autonomously fans out the draft, score, humanize, and re-score loop across your top channels, a full humanized creative set without clicking channel by channel.
+6. **Agent readiness (GEO / AEO).** Generate the machine-facing assets that make a brand legible to AI shopping agents and answer engines: JSON-LD schema, an answer-engine FAQ, and a machine-readable offer feed. This is the other end of the barbell, marketing to the AI agent, not just the human.
+
+More ways in:
+- **Slop meter (`/check`).** Paste any existing ad, email, or landing copy for an instant authenticity score, the exact AI tells found, and a humanized rewrite. Two modes: human authenticity, and agent readiness (how well the copy holds up for AI agents to parse, cite, and act on).
+- **MCP server (`mcp/`).** The whole pipeline is exposed as Model Context Protocol tools, so any AI agent (Claude Code, Cursor) can call `sequence_dna`, `recommend_channels`, `humanize`, and `authenticity_score` from the terminal. The "MCP connector" and agentic threads, made real.
 
 ## Why I built THIS one
 
