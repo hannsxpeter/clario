@@ -47,6 +47,7 @@
 		fmtLoading = platform;
 		active = platform;
 		fmtError = '';
+		pushRes = null;
 		try {
 			const res = (await client.action(api.adformat.forPlatform, {
 				text: d.humanized,
@@ -62,6 +63,27 @@
 
 	function copyVal(v: string) {
 		navigator.clipboard?.writeText(v);
+	}
+
+	// Push connector: build (and, for Google with creds, create) a paused ad.
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any
+	let pushRes = $state<any>(null);
+	let pushLoading = $state(false);
+	let showReq = $state(false);
+	async function pushAd() {
+		if (pushLoading || !active || !formats[active]) return;
+		pushLoading = true;
+		showReq = false;
+		try {
+			pushRes = await client.action(api.adpush.push, {
+				platform: active,
+				fields: formats[active].fields
+			});
+		} catch (e) {
+			pushRes = { mode: 'error', error: e instanceof Error ? e.message : 'Push failed' };
+		} finally {
+			pushLoading = false;
+		}
 	}
 </script>
 
@@ -156,6 +178,22 @@
 						</div>
 					{/each}
 					{#if formats[active].notes}<p class="adfmt-notes">{formats[active].notes}</p>{/if}
+					<div class="push-row">
+						<button class="push-btn" onclick={pushAd} disabled={pushLoading}>
+							{#if pushLoading}<Icon name="refresh" size={13} class="spin" />{:else}<Icon name="arrowUpRight" size={13} />{/if}
+							Push to {platforms.find((p) => p.key === active)?.name} (paused)
+						</button>
+					</div>
+					{#if pushRes}
+						<div class="push-res" class:live={pushRes.mode === 'live'} class:err={pushRes.mode === 'error'}>
+							<div class="push-head">
+								<span class="push-mode">{pushRes.mode === 'live' ? 'Created (paused)' : pushRes.mode === 'error' ? 'Error' : 'Dry run'}</span>
+								<button class="push-toggle" onclick={() => (showReq = !showReq)}>{showReq ? 'Hide request' : 'Show request'}</button>
+							</div>
+							<p class="push-note">{pushRes.note || pushRes.error || pushRes.resourceName || ''}</p>
+							{#if showReq && pushRes.request}<pre class="push-code">{JSON.stringify(pushRes.request, null, 2)}</pre>{/if}
+						</div>
+					{/if}
 				</div>
 			{/if}
 		</div>
@@ -415,5 +453,87 @@
 		font-size: 0.78rem;
 		color: var(--color-ink-muted);
 		font-style: italic;
+	}
+	.push-row {
+		margin-top: 0.6rem;
+	}
+	.push-btn {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.35rem;
+		font-family: var(--font-mono);
+		font-size: 0.74rem;
+		padding: 0.4rem 0.8rem;
+		border: 1px solid var(--color-ink);
+		border-radius: 999px;
+		background: var(--color-ink);
+		color: var(--color-paper);
+		cursor: pointer;
+	}
+	.push-btn:hover:not(:disabled) {
+		background: var(--color-accent-deep);
+		border-color: var(--color-accent-deep);
+	}
+	.push-btn:disabled {
+		opacity: 0.5;
+		cursor: default;
+	}
+	.push-res {
+		margin-top: 0.6rem;
+		border: 1px solid var(--color-line-strong);
+		border-radius: var(--radius-md);
+		padding: 0.7rem 0.8rem;
+		background: var(--color-paper-sunken);
+	}
+	.push-res.live {
+		border-color: var(--color-human);
+	}
+	.push-res.err {
+		border-color: var(--color-ai);
+	}
+	.push-head {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+	}
+	.push-mode {
+		font-family: var(--font-mono);
+		font-size: 0.68rem;
+		text-transform: uppercase;
+		letter-spacing: 0.08em;
+		font-weight: 600;
+		color: var(--color-ink-soft);
+	}
+	.push-res.live .push-mode {
+		color: var(--color-human);
+	}
+	.push-res.err .push-mode {
+		color: var(--color-ai);
+	}
+	.push-toggle {
+		background: none;
+		border: none;
+		cursor: pointer;
+		font-family: var(--font-mono);
+		font-size: 0.7rem;
+		color: var(--color-accent-deep);
+	}
+	.push-note {
+		font-size: 0.82rem;
+		color: var(--color-ink-soft);
+		margin: 0.35rem 0 0;
+		line-height: 1.4;
+	}
+	.push-code {
+		margin: 0.5rem 0 0;
+		padding: 0.7rem;
+		background: var(--color-ink);
+		color: #f0e9db;
+		border-radius: var(--radius-sm);
+		font-family: var(--font-mono);
+		font-size: 0.72rem;
+		line-height: 1.45;
+		overflow: auto;
+		max-height: 220px;
 	}
 </style>

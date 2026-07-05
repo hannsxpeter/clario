@@ -1,6 +1,6 @@
 # Clario MCP server
 
-A small, self-contained [Model Context Protocol](https://modelcontextprotocol.io) server that exposes Clario's core capabilities as MCP tools. Any MCP-capable AI coding agent (Claude Code, Cursor, and others) can connect to it to run the full Clario pipeline from the terminal: sequence a brand's Company DNA, turn that DNA into a channel plan, then score and humanize the copy.
+A small, self-contained [Model Context Protocol](https://modelcontextprotocol.io) server that exposes Clario's core capabilities as MCP tools. Any MCP-capable AI coding agent (Claude Code, Cursor, and others) can connect to it to run the full Clario pipeline from the terminal: sequence a brand's Company DNA, turn that DNA into a channel plan, score and humanize the copy, then build the ad-platform push requests.
 
 It reuses the exact prompt builders the Clario app uses (`../convex/prompts.ts`) and calls the same DeepSeek model, so the behavior is identical to the product. The house rules carry over: sound like a person, never like AI. No em dashes, no emojis, honest ranges over false precision.
 
@@ -8,7 +8,9 @@ This package is fully isolated. It has its own `package.json` and `node_modules`
 
 ## Tools
 
-The four tools cover the whole Clario pipeline. A typical flow is `sequence_dna` to distill a brand's Company DNA, then `recommend_channels` to turn that DNA into a plan, then `humanize` and `authenticity_score` on the copy you write for each channel. Each tool is independent, though, so you can call any of them on its own.
+The seven tools cover the whole Clario pipeline. A typical flow is `sequence_dna` to distill a brand's Company DNA, then `recommend_channels` to turn that DNA into a plan, then `humanize` and `authenticity_score` on the copy you write for each channel, then `push_to_google`, `push_to_meta`, or `push_to_taboola` to build the ad-platform push request. Each tool is independent, though, so you can call any of them on its own.
+
+The first four tools call DeepSeek and need a `DEEPSEEK_API_KEY`. The three push tools are pure dry-run builders: they assemble and return the request JSON only, so they call no model, no ad platform, and need no API key.
 
 ### `sequence_dna`
 
@@ -51,6 +53,39 @@ Input:
 - `voice` (string, optional): a target brand voice or style guide to rewrite the copy into.
 
 Returns a JSON object with the rewritten `humanized` copy and a `changed` list of short notes on what changed and why.
+
+### `push_to_google`
+
+Builds the exact Google Ads create-request for a responsive search ad, always as `PAUSED`, from labelled ad fields. This is a safe dry-run builder: it returns the request JSON that would be sent to create the paused ad and does not call the Google Ads API. Nothing is pushed live. It reuses `buildGoogleRequest` from `../convex/adpush.ts`, so the payload matches exactly what the app would send.
+
+Input:
+
+- `fields` (array, required): the ad fields as `{ label, value, limit }` objects. Headlines come from labels starting with `headline`, descriptions from labels starting with `description`.
+- `finalUrl` (string, optional): the landing page URL. Defaults to `https://example.com`.
+
+Returns the built create-request as pretty-printed JSON text (an `adGroupAds:mutate` operation with `status: "PAUSED"` and a `responsiveSearchAd`).
+
+### `push_to_meta`
+
+Builds the exact Meta (Facebook) AdCreative create-request from labelled ad fields, for a paused ad. Dry-run builder: it returns the request JSON and does not call the Meta Marketing API. Nothing is pushed live. It reuses `buildMetaRequest` from `../convex/adpush.ts`.
+
+Input:
+
+- `fields` (array, required): the ad fields as `{ label, value, limit }` objects (primary text, headline, description).
+- `finalUrl` (string, optional): the landing page URL. Defaults to `https://example.com`.
+
+Returns the built AdCreative create-request as pretty-printed JSON text, plus a `followUp` note reminding you to create the Ad itself as `PAUSED` referencing this creative.
+
+### `push_to_taboola`
+
+Builds the exact Taboola Backstage campaign-item create-request from labelled ad fields, as an inactive (paused) item (`is_active: false`). Dry-run builder: it returns the request JSON and does not call the Taboola Backstage API. Nothing is pushed live. It reuses `buildTaboolaRequest` from `../convex/adpush.ts`.
+
+Input:
+
+- `fields` (array, required): the ad fields as `{ label, value, limit }` objects (title, description).
+- `finalUrl` (string, optional): the landing page URL. Defaults to `https://example.com`.
+
+Returns the built item create-request as pretty-printed JSON text, plus a `followUp` note about attaching the thumbnail and submitting for review.
 
 ## Requirements
 
@@ -106,4 +141,4 @@ Notes:
 - Replace the path with the absolute path on your machine if it differs, and replace `sk-your-key` with a real DeepSeek key.
 - For Claude Code, this is the shape used in its MCP settings. Cursor and other clients use the same `command` / `args` / `env` fields, sometimes under a slightly different top-level key. Consult your client's MCP docs for exactly where the server list lives.
 
-Once registered, the four tools appear to the agent as `sequence_dna`, `recommend_channels`, `authenticity_score`, and `humanize`.
+Once registered, the seven tools appear to the agent as `sequence_dna`, `recommend_channels`, `authenticity_score`, `humanize`, `push_to_google`, `push_to_meta`, and `push_to_taboola`.

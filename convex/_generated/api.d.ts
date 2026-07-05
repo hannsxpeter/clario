@@ -9,6 +9,7 @@
  */
 
 import type * as adformat from "../adformat.js";
+import type * as adpush from "../adpush.js";
 import type * as agentready from "../agentready.js";
 import type * as assets from "../assets.js";
 import type * as campaign from "../campaign.js";
@@ -28,6 +29,7 @@ import type {
 
 declare const fullApi: ApiFromModules<{
   adformat: typeof adformat;
+  adpush: typeof adpush;
   agentready: typeof agentready;
   assets: typeof assets;
   campaign: typeof campaign;

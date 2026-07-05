@@ -40,6 +40,7 @@ import {
 	recommendUser
 } from '../convex/prompts.ts';
 import { MARKETING_KNOWLEDGE } from '../convex/knowledge.ts';
+import { buildGoogleRequest, buildMetaRequest, buildTaboolaRequest } from '../convex/adpush.ts';
 
 /* ------------------------------------------------------------------ *
  * DeepSeek client (OpenAI-compatible endpoint, called with plain fetch).
@@ -289,6 +290,115 @@ server.registerTool(
 		);
 		return {
 			content: [{ type: 'text', text: JSON.stringify(result, null, 2) }]
+		};
+	}
+);
+
+/* ------------------------------------------------------------------ *
+ * Ad-platform push builders (dry-run).
+ *
+ * These three tools reuse the request builders from ../convex/adpush.ts to
+ * assemble the exact create-request each ad platform's API expects, always for a
+ * PAUSED ad so a human reviews and enables it. They are pure dry-run helpers:
+ * they build and return the request JSON only. They never call DeepSeek and never
+ * call the ad platforms, so they need no API key.
+ * ------------------------------------------------------------------ */
+
+const adFieldSchema = z.object({
+	label: z.string().describe('The field label, for example "headline 1" or "description 2".'),
+	value: z.string().describe('The field text.'),
+	limit: z.number().describe('The platform character limit for this field.')
+});
+
+/**
+ * push_to_google
+ * Builds the Google Ads responsive search ad create-request (PAUSED) from the
+ * given fields. Dry-run: returns the request JSON without calling Google.
+ */
+server.registerTool(
+	'push_to_google',
+	{
+		title: 'Push to Google (dry-run)',
+		description:
+			'Build the exact Google Ads create-request for a responsive search ad, always as PAUSED, from ' +
+			'labelled ad fields. Dry-run only: it returns the request JSON that would be sent to create the ' +
+			'paused ad and does not call the Google Ads API.',
+		inputSchema: {
+			fields: z
+				.array(adFieldSchema)
+				.describe('The ad fields (headlines, descriptions) as { label, value, limit } objects.'),
+			finalUrl: z
+				.string()
+				.optional()
+				.describe('Optional landing page URL for the ad. Defaults to https://example.com.')
+		}
+	},
+	async ({ fields, finalUrl }) => {
+		const request = buildGoogleRequest(fields, finalUrl ?? 'https://example.com');
+		return {
+			content: [{ type: 'text', text: JSON.stringify(request, null, 2) }]
+		};
+	}
+);
+
+/**
+ * push_to_meta
+ * Builds the Meta (Facebook) ad creative create-request from the given fields.
+ * Dry-run: returns the request JSON without calling Meta.
+ */
+server.registerTool(
+	'push_to_meta',
+	{
+		title: 'Push to Meta (dry-run)',
+		description:
+			'Build the exact Meta (Facebook) AdCreative create-request from labelled ad fields, for a paused ' +
+			'ad. Dry-run only: it returns the request JSON that would be sent and does not call the Meta ' +
+			'Marketing API.',
+		inputSchema: {
+			fields: z
+				.array(adFieldSchema)
+				.describe('The ad fields (primary text, headline, description) as { label, value, limit } objects.'),
+			finalUrl: z
+				.string()
+				.optional()
+				.describe('Optional landing page URL for the ad. Defaults to https://example.com.')
+		}
+	},
+	async ({ fields, finalUrl }) => {
+		const request = buildMetaRequest(fields, finalUrl ?? 'https://example.com');
+		return {
+			content: [{ type: 'text', text: JSON.stringify(request, null, 2) }]
+		};
+	}
+);
+
+/**
+ * push_to_taboola
+ * Builds the Taboola Backstage item create-request from the given fields.
+ * Dry-run: returns the request JSON without calling Taboola.
+ */
+server.registerTool(
+	'push_to_taboola',
+	{
+		title: 'Push to Taboola (dry-run)',
+		description:
+			'Build the exact Taboola Backstage campaign-item create-request from labelled ad fields, as an ' +
+			'inactive (paused) item. Dry-run only: it returns the request JSON that would be sent and does ' +
+			'not call the Taboola Backstage API.',
+		inputSchema: {
+			fields: z
+				.array(adFieldSchema)
+				.describe('The ad fields (title, description) as { label, value, limit } objects.'),
+			finalUrl: z
+				.string()
+				.optional()
+				.describe('Optional landing page URL for the item. Defaults to https://example.com.')
+		}
+	},
+	async ({ fields, finalUrl }) => {
+		const request = buildTaboolaRequest(fields, finalUrl ?? 'https://example.com');
+		return {
+			content: [{ type: 'text', text: JSON.stringify(request, null, 2) }]
 		};
 	}
 );
