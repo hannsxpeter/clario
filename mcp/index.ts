@@ -1,10 +1,14 @@
 /**
  * Clario MCP server.
  *
- * Exposes Clario's two core copy capabilities as Model Context Protocol tools
- * over a stdio transport, so any MCP-capable AI coding agent (Claude Code,
- * Cursor, and others) can score and humanize marketing copy:
+ * Exposes Clario's core capabilities as Model Context Protocol tools over a
+ * stdio transport, so any MCP-capable AI coding agent (Claude Code, Cursor, and
+ * others) can run the full Clario pipeline from the terminal:
  *
+ *   - sequence_dna: distill a business's Company DNA (voice, identity, story,
+ *     rules) from any material it provides.
+ *   - recommend_channels: turn a Company DNA into an actionable, grounded
+ *     channel plan with personas and honest ranges.
  *   - authenticity_score: rate how human a piece of copy reads (0-100, banded)
  *     and flag the spans that give it away as machine-written.
  *   - humanize: rewrite copy so it reads as genuinely human, optionally in a
@@ -28,9 +32,14 @@ import { z } from 'zod';
 import {
 	authenticitySystem,
 	authenticityUser,
+	dnaSystem,
+	dnaUser,
 	humanizerSystem,
-	humanizerUser
+	humanizerUser,
+	recommendSystem,
+	recommendUser
 } from '../convex/prompts.ts';
+import { MARKETING_KNOWLEDGE } from '../convex/knowledge.ts';
 
 /* ------------------------------------------------------------------ *
  * DeepSeek client (OpenAI-compatible endpoint, called with plain fetch).
@@ -203,6 +212,80 @@ server.registerTool(
 			humanizerSystem(voice ?? ''),
 			humanizerUser(text),
 			0.7
+		);
+		return {
+			content: [{ type: 'text', text: JSON.stringify(result, null, 2) }]
+		};
+	}
+);
+
+/**
+ * sequence_dna
+ * Reads whatever a business provides (website copy, bios, a plan, a
+ * description) and distills its Company DNA: voice, identity, story, and rules.
+ * This is the first step of the Clario pipeline; its output feeds the others.
+ */
+server.registerTool(
+	'sequence_dna',
+	{
+		title: 'Sequence Company DNA',
+		description:
+			"Distill a business's Company DNA from any material it provides (website copy, social bios, " +
+			'a plan, or a plain description): its voice, identity, story, and brand rules, plus a reusable ' +
+			'style guide. Returns the Company DNA as a JSON object, which recommend_channels and the ' +
+			'copy tools can build on.',
+		inputSchema: {
+			text: z
+				.string()
+				.describe(
+					'Everything the business provided: website copy, social bios, an uploaded plan, or a plain description.'
+				)
+		}
+	},
+	async ({ text }) => {
+		const result = await deepseekJson(dnaSystem(), dnaUser(text), 0.5);
+		return {
+			content: [{ type: 'text', text: JSON.stringify(result, null, 2) }]
+		};
+	}
+);
+
+/**
+ * recommend_channels
+ * Turns a Company DNA into an actionable channel plan, grounded in the same
+ * verified marketing knowledge base the app uses, with personas and honest
+ * success and ROI ranges. The dna arg is a JSON string of a Company DNA object
+ * (as produced by sequence_dna) or a free-text description.
+ */
+server.registerTool(
+	'recommend_channels',
+	{
+		title: 'Recommend channels',
+		description:
+			"Turn a brand's Company DNA into an actionable channel plan grounded in Clario's verified " +
+			'marketing knowledge base: a realistic channel mix with budget splits, top picks, personas, and ' +
+			'honest success and ROI ranges. Pass the Company DNA as a JSON string (as produced by ' +
+			'sequence_dna) or a plain description. Returns the channel plan as a JSON object.',
+		inputSchema: {
+			dna: z
+				.string()
+				.describe(
+					'The Company DNA as a JSON string (from sequence_dna) or a free-text description of the brand.'
+				)
+		}
+	},
+	async ({ dna }) => {
+		let dnaObject: unknown;
+		try {
+			dnaObject = parseJson(dna);
+		} catch {
+			// Not JSON: pass the description through as-is.
+			dnaObject = dna;
+		}
+		const result = await deepseekJson(
+			recommendSystem(),
+			recommendUser(dnaObject, MARKETING_KNOWLEDGE, {}),
+			0.5
 		);
 		return {
 			content: [{ type: 'text', text: JSON.stringify(result, null, 2) }]

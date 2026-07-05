@@ -19,6 +19,14 @@
 		changed: string[];
 		scoreAfter: AuthScore;
 	} | null>(null);
+	let mode = $state<'human' | 'agent'>('human');
+	let agentResult = $state<{
+		score: number;
+		band: string;
+		issues: { span: string; note: string }[];
+		fixes: string[];
+		basis: string;
+	} | null>(null);
 
 	const delta = $derived(
 		result ? Math.round(result.scoreAfter.score - result.scoreBefore.score) : 0
@@ -30,11 +38,16 @@
 		loading = true;
 		error = '';
 		result = null;
+		agentResult = null;
 		try {
-			result = await client.action(api.check.run, {
-				text: text.trim(),
-				voice: voice.trim() || undefined
-			});
+			if (mode === 'agent') {
+				agentResult = await client.action(api.check.agentScore, { text: text.trim() });
+			} else {
+				result = await client.action(api.check.run, {
+					text: text.trim(),
+					voice: voice.trim() || undefined
+				});
+			}
 		} catch (e) {
 			error = e instanceof Error ? e.message : 'Something went wrong.';
 		} finally {
@@ -57,8 +70,18 @@
 <div class="wrap">
 	<div class="intro reveal">
 		<span class="eyebrow">Slop meter</span>
-		<h1 class="display-lg">Does your copy read like a human, or like AI?</h1>
-		<p class="sub">Paste any ad, email, or landing copy. Clario scores it for authenticity, then rewrites it to read human, using the same engine that powers the full tool.</p>
+		<h1 class="display-lg">
+			{mode === 'agent' ? 'Is your copy ready for AI agents?' : 'Does your copy read like a human, or like AI?'}
+		</h1>
+		<p class="sub">
+			{mode === 'agent'
+				? 'Paste any copy or page text. Clario scores how ready it is for AI agents and answer engines to parse, cite, and act on, then tells you how to fix it.'
+				: 'Paste any ad, email, or landing copy. Clario scores it for authenticity, then rewrites it to read human, using the same engine that powers the full tool.'}
+		</p>
+		<div class="mode">
+			<button class="mode-btn" class:on={mode === 'human'} onclick={() => (mode = 'human')}>Human authenticity</button>
+			<button class="mode-btn" class:on={mode === 'agent'} onclick={() => (mode = 'agent')}>Agent readiness</button>
+		</div>
 	</div>
 
 	<div class="grid">
@@ -71,38 +94,35 @@
 				placeholder="Paste the ad, email, or landing copy you want to check..."
 				bind:value={text}></textarea>
 
-			<button class="voice-toggle" onclick={() => (showVoice = !showVoice)}>
-				<Icon name={showVoice ? 'minus' : 'plus'} size={14} /> Match a brand voice (optional)
-			</button>
-			{#if showVoice}
-				<textarea
-					class="field ta"
-					rows="3"
-					placeholder="Describe the voice to match, or paste a sample the brand actually wrote."
-					bind:value={voice}></textarea>
+			{#if mode === 'human'}
+				<button class="voice-toggle" onclick={() => (showVoice = !showVoice)}>
+					<Icon name={showVoice ? 'minus' : 'plus'} size={14} /> Match a brand voice (optional)
+				</button>
+				{#if showVoice}
+					<textarea
+						class="field ta"
+						rows="3"
+						placeholder="Describe the voice to match, or paste a sample the brand actually wrote."
+						bind:value={voice}></textarea>
+				{/if}
 			{/if}
 
 			{#if error}<div class="err"><Icon name="alert" size={15} /> {error}</div>{/if}
 
 			<button class="btn btn-accent runbtn" disabled={!canRun || loading} onclick={run}>
 				{#if loading}
-					<Icon name="refresh" size={18} class="spin" /> Scoring and humanizing...
+					<Icon name="refresh" size={18} class="spin" /> {mode === 'agent' ? 'Scoring...' : 'Scoring and humanizing...'}
 				{:else}
-					<Icon name="shield" size={18} /> Score and humanize
+					<Icon name={mode === 'agent' ? 'compass' : 'shield'} size={18} /> {mode === 'agent' ? 'Score for AI agents' : 'Score and humanize'}
 				{/if}
 			</button>
 		</div>
 
 		<div class="output-col">
-			{#if !result && !loading}
-				<div class="empty card-flat">
-					<Icon name="shield" size={30} />
-					<p>Your authenticity score and a humanized rewrite will appear here.</p>
-				</div>
-			{:else if loading}
+			{#if loading}
 				<div class="empty card-flat">
 					<Icon name="refresh" size={30} class="spin" />
-					<p>Reading the tells, then re-voicing it...</p>
+					<p>{mode === 'agent' ? 'Checking agent readiness...' : 'Reading the tells, then re-voicing it...'}</p>
 				</div>
 			{:else if result}
 				<div class="res card reveal">
@@ -145,6 +165,31 @@
 						</details>
 					{/if}
 				</div>
+			{:else if agentResult}
+				{@const ar = agentResult}
+				<div class="res card reveal">
+					<div class="score-row"><Gauge score={ar.score} band={ar.band} size={100} label="Agent readiness" /></div>
+					<p class="ar-basis">{ar.basis}</p>
+					{#if ar.issues?.length}
+						<div class="flags">
+							<span class="flags-h">What blocks agents</span>
+							{#each ar.issues.slice(0, 8) as f (f.span + f.note)}
+								<div class="flag"><span class="flag-span">"{f.span}"</span><span class="flag-pat">{f.note}</span></div>
+							{/each}
+						</div>
+					{/if}
+					{#if ar.fixes?.length}
+						<div class="human">
+							<span class="human-h">How to make it agent-ready</span>
+							<ul class="fixes">{#each ar.fixes as fx (fx)}<li>{fx}</li>{/each}</ul>
+						</div>
+					{/if}
+				</div>
+			{:else}
+				<div class="empty card-flat">
+					<Icon name={mode === 'agent' ? 'compass' : 'shield'} size={30} />
+					<p>{mode === 'agent' ? 'An agent-readiness score and fixes will appear here.' : 'Your authenticity score and a humanized rewrite will appear here.'}</p>
+				</div>
 			{/if}
 		</div>
 	</div>
@@ -166,6 +211,46 @@
 	.sub {
 		color: var(--color-ink-soft);
 		font-size: 1.1rem;
+	}
+	.mode {
+		display: inline-flex;
+		margin-top: 1.2rem;
+		border: 1px solid var(--color-line-strong);
+		border-radius: 999px;
+		padding: 0.2rem;
+		gap: 0.2rem;
+	}
+	.mode-btn {
+		font-family: var(--font-mono);
+		font-size: 0.78rem;
+		padding: 0.4rem 0.9rem;
+		border: none;
+		border-radius: 999px;
+		background: none;
+		color: var(--color-ink-soft);
+		cursor: pointer;
+	}
+	.mode-btn.on {
+		background: var(--color-ink);
+		color: var(--color-paper);
+	}
+	.ar-basis {
+		font-size: 0.95rem;
+		color: var(--color-ink-soft);
+		line-height: 1.45;
+		text-align: center;
+	}
+	.fixes {
+		margin: 0.5rem 0 0;
+		padding-left: 1.1rem;
+		display: flex;
+		flex-direction: column;
+		gap: 0.35rem;
+	}
+	.fixes li {
+		font-size: 0.9rem;
+		color: var(--color-ink-soft);
+		line-height: 1.4;
 	}
 	.grid {
 		display: grid;

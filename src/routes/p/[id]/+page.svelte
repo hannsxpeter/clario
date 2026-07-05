@@ -62,6 +62,40 @@
 			generating = next;
 		}
 	}
+
+	// Campaign agent: autonomously generate + humanize creative across top channels.
+	let launchingCampaign = $state(false);
+	async function launchCampaign() {
+		if (launchingCampaign) return;
+		launchingCampaign = true;
+		try {
+			await client.mutation(api.campaign.run, { projectId: id });
+		} finally {
+			setTimeout(() => (launchingCampaign = false), 3000);
+		}
+	}
+
+	// Agent-readiness pack: the machine-facing assets (schema, FAQ, offer feed).
+	type AgentPack = { schema: string; faq: { q: string; a: string }[]; offerFeed: string; notes: string[] };
+	let arPack = $state<AgentPack | null>(null);
+	let arLoading = $state(false);
+	let arError = $state('');
+	async function loadAgentReady() {
+		if (arLoading) return;
+		arLoading = true;
+		arError = '';
+		try {
+			arPack = (await client.action(api.agentready.run, { projectId: id })) as AgentPack;
+		} catch (e) {
+			arError = e instanceof Error ? e.message : 'Could not build the pack.';
+		} finally {
+			arLoading = false;
+		}
+	}
+
+	function copyText(t: string) {
+		navigator.clipboard?.writeText(t);
+	}
 </script>
 
 {#if q.isLoading && !q.data}
@@ -118,6 +152,9 @@
 					<h2 class="display-lg">Where to invest, and what to say.</h2>
 					<p class="over-sum prose-serif">{recs.summary}</p>
 					<div class="exports">
+						<button class="btn btn-accent" onclick={launchCampaign} disabled={launchingCampaign}>
+							{#if launchingCampaign}<Icon name="refresh" size={16} class="spin" /> Agent working{:else}<Icon name="bolt" size={16} /> Run campaign agent{/if}
+						</button>
 						<button class="btn btn-primary" onclick={() => exportMarkdownPlan(dna, recs!)}>
 							<Icon name="download" size={16} /> Marketing plan
 						</button>
@@ -125,6 +162,7 @@
 							<Icon name="layers" size={16} /> Pitch deck
 						</button>
 					</div>
+					<p class="agent-note"><Icon name="bolt" size={13} /> The campaign agent autonomously drafts, scores, and humanizes creative across your top channels.</p>
 				</div>
 				{#if budgetSegments.length}
 					<div class="budget card-flat">
@@ -165,6 +203,44 @@
 						<ChannelCard {channel} generating={generating.has(channel.key)} onGenerate={generate} />
 					{/each}
 				</div>
+			</section>
+
+			<!-- Agent readiness -->
+			<section class="agentready">
+				<h3 class="sec-h"><Icon name="layers" size={18} /> Agent readiness (GEO / AEO)</h3>
+				<p class="sec-note">The machine-facing end of the barbell. Generate the assets that AI shopping agents and answer engines parse, cite, and act on.</p>
+				{#if arPack}
+					{@const pack = arPack}
+					<div class="ar-grid">
+						<div class="ar-block card-flat">
+							<div class="ar-bhead"><span class="ar-h">JSON-LD schema</span><button class="ar-copy" onclick={() => copyText(pack.schema)} aria-label="Copy schema"><Icon name="copy" size={13} /></button></div>
+							<pre class="ar-code">{pack.schema}</pre>
+						</div>
+						<div class="ar-block card-flat">
+							<span class="ar-h">Answer-engine FAQ</span>
+							<div class="ar-faq">
+								{#each pack.faq as f (f.q)}
+									<div class="ar-qa"><p class="ar-q">{f.q}</p><p class="ar-a">{f.a}</p></div>
+								{/each}
+							</div>
+						</div>
+						<div class="ar-block card-flat">
+							<div class="ar-bhead"><span class="ar-h">Machine-readable offer feed</span><button class="ar-copy" onclick={() => copyText(pack.offerFeed)} aria-label="Copy feed"><Icon name="copy" size={13} /></button></div>
+							<pre class="ar-code">{pack.offerFeed}</pre>
+						</div>
+						{#if pack.notes?.length}
+							<div class="ar-block card-flat">
+								<span class="ar-h">Make it more agent-ready</span>
+								<ul class="ar-notes">{#each pack.notes as n (n)}<li>{n}</li>{/each}</ul>
+							</div>
+						{/if}
+					</div>
+				{:else}
+					<button class="btn btn-primary" onclick={loadAgentReady} disabled={arLoading}>
+						{#if arLoading}<Icon name="refresh" size={16} class="spin" /> Building the pack{:else}<Icon name="compass" size={16} /> Generate agent-ready pack{/if}
+					</button>
+					{#if arError}<div class="ar-err"><Icon name="alert" size={14} /> {arError}</div>{/if}
+				{/if}
 			</section>
 
 			<!-- Generated assets -->
@@ -392,6 +468,94 @@
 		gap: 1.4rem;
 		margin-top: 1rem;
 	}
+	.agent-note {
+		display: flex;
+		align-items: center;
+		gap: 0.4rem;
+		margin-top: 0.7rem;
+		font-size: 0.82rem;
+		color: var(--color-accent-deep);
+	}
+	.ar-grid {
+		display: grid;
+		grid-template-columns: 1fr 1fr;
+		gap: 1.2rem;
+		margin-top: 1rem;
+	}
+	.ar-block {
+		padding: 1.1rem;
+	}
+	.ar-bhead {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		margin-bottom: 0.6rem;
+	}
+	.ar-h {
+		font-family: var(--font-mono);
+		font-size: 0.68rem;
+		text-transform: uppercase;
+		letter-spacing: 0.08em;
+		color: var(--color-ink-muted);
+	}
+	.ar-copy {
+		background: none;
+		border: none;
+		cursor: pointer;
+		color: var(--color-ink-muted);
+		padding: 0;
+	}
+	.ar-copy:hover {
+		color: var(--color-accent);
+	}
+	.ar-code {
+		margin: 0.5rem 0 0;
+		padding: 0.9rem;
+		background: var(--color-ink);
+		color: #f0e9db;
+		border-radius: var(--radius-md);
+		font-family: var(--font-mono);
+		font-size: 0.76rem;
+		line-height: 1.5;
+		overflow: auto;
+		max-height: 260px;
+	}
+	.ar-faq {
+		display: flex;
+		flex-direction: column;
+		gap: 0.7rem;
+	}
+	.ar-q {
+		font-weight: 600;
+		font-size: 0.9rem;
+		margin: 0 0 0.15rem;
+	}
+	.ar-a {
+		font-size: 0.88rem;
+		color: var(--color-ink-soft);
+		margin: 0;
+		line-height: 1.4;
+	}
+	.ar-notes {
+		margin: 0.5rem 0 0;
+		padding-left: 1.1rem;
+		display: flex;
+		flex-direction: column;
+		gap: 0.35rem;
+	}
+	.ar-notes li {
+		font-size: 0.88rem;
+		color: var(--color-ink-soft);
+		line-height: 1.4;
+	}
+	.ar-err {
+		display: flex;
+		align-items: center;
+		gap: 0.4rem;
+		color: var(--color-ai);
+		font-size: 0.88rem;
+		margin-top: 0.6rem;
+	}
 	:global(.spin) {
 		animation: spin 0.9s linear infinite;
 	}
@@ -402,6 +566,9 @@
 	}
 	@media (max-width: 820px) {
 		.over {
+			grid-template-columns: 1fr;
+		}
+		.ar-grid {
 			grid-template-columns: 1fr;
 		}
 	}

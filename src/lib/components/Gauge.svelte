@@ -2,12 +2,18 @@
 	export const bandColor: Record<string, string> = {
 		human: 'var(--color-human)',
 		mixed: 'var(--color-mixed)',
-		ai: 'var(--color-ai)'
+		ai: 'var(--color-ai)',
+		ready: 'var(--color-human)',
+		partial: 'var(--color-mixed)',
+		weak: 'var(--color-ai)'
 	};
 	export const bandLabel: Record<string, string> = {
 		human: 'Reads human',
 		mixed: 'Mixed signals',
-		ai: 'Reads AI'
+		ai: 'Reads AI',
+		ready: 'Agent-ready',
+		partial: 'Partly ready',
+		weak: 'Not agent-ready'
 	};
 </script>
 

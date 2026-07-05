@@ -9,7 +9,9 @@
  */
 
 import type * as adformat from "../adformat.js";
+import type * as agentready from "../agentready.js";
 import type * as assets from "../assets.js";
+import type * as campaign from "../campaign.js";
 import type * as check from "../check.js";
 import type * as deepseek from "../deepseek.js";
 import type * as knowledge from "../knowledge.js";
@@ -26,7 +28,9 @@ import type {
 
 declare const fullApi: ApiFromModules<{
   adformat: typeof adformat;
+  agentready: typeof agentready;
   assets: typeof assets;
+  campaign: typeof campaign;
   check: typeof check;
   deepseek: typeof deepseek;
   knowledge: typeof knowledge;
