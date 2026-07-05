@@ -25,6 +25,7 @@
 			<span class="word font-display">Clario</span>
 		</a>
 		<nav class="nav">
+			<a href="/check" class="nav-link">Slop check</a>
 			<a href="/#how" class="nav-link">How it works</a>
 			<a href="/new" class="btn btn-primary new-btn">
 				<Icon name="sparkle" size={16} /> Sequence a brand

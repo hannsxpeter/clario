@@ -8,7 +8,9 @@
  * @module
  */
 
+import type * as adformat from "../adformat.js";
 import type * as assets from "../assets.js";
+import type * as check from "../check.js";
 import type * as deepseek from "../deepseek.js";
 import type * as knowledge from "../knowledge.js";
 import type * as pipeline from "../pipeline.js";
@@ -23,7 +25,9 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
+  adformat: typeof adformat;
   assets: typeof assets;
+  check: typeof check;
   deepseek: typeof deepseek;
   knowledge: typeof knowledge;
   pipeline: typeof pipeline;

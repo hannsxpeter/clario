@@ -2,6 +2,9 @@
 	import Icon from '$lib/components/Icon.svelte';
 	import DnaHelix from '$lib/components/DnaHelix.svelte';
 
+	// A pre-sequenced example so a first-time visitor can see the full output instantly.
+	const DEMO_HREF = '/p/jh7czpvdbg62rn15x7vhvx1zd189z3fm';
+
 	const steps = [
 		{
 			icon: 'layers',
@@ -33,8 +36,9 @@
 		</p>
 		<div class="cta">
 			<a href="/new" class="btn btn-accent big"><Icon name="sparkle" size={18} /> Sequence your brand</a>
-			<a href="#how" class="btn btn-ghost big">See how it works <Icon name="arrowRight" size={16} /></a>
+			<a href={DEMO_HREF} class="btn btn-ghost big"><Icon name="bolt" size={16} /> See a live example</a>
 		</div>
+		<a href="/check" class="minor-link"><Icon name="shield" size={14} /> Or paste any ad and score it for AI slop</a>
 	</div>
 	<div class="hero-helix" aria-hidden="true">
 		<DnaHelix width={540} height={220} strands={30} />
@@ -102,6 +106,19 @@
 		display: flex;
 		gap: 0.8rem;
 		flex-wrap: wrap;
+	}
+	.minor-link {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.4rem;
+		margin-top: 1rem;
+		font-family: var(--font-mono);
+		font-size: 0.8rem;
+		color: var(--color-ink-soft);
+		text-decoration: none;
+	}
+	.minor-link:hover {
+		color: var(--color-accent);
 	}
 	.big {
 		padding: 0.9rem 1.5rem;

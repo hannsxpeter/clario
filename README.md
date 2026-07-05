@@ -17,7 +17,11 @@ From that, Clario:
 1. **Sequences the Company DNA.** A structured profile of the brand's voice (register, cadence, vocabulary, sentence music, humor, signature phrases), its identity (mission, value proposition, differentiators, audience), and the story it tells (origin, the villain it fights, the transformation it promises). Plus a brand archetype and an Always/Never voice ruleset.
 2. **Builds a channel plan.** Target personas, then the full channel taxonomy (TV, radio, CTV, OOH, paid search, paid social, native/Taboola, affiliate, influencer, SEO, GEO/AEO, email, SMS, landing pages, community, digital PR, experiential, and more) with a recommended budget split, honest ROI and success ranges, KPIs, and a top-five shortlist. Estimates are presented as ranges with assumptions, never as fake hero numbers.
 3. **Generates humanized creative.** On any channel, Clario drafts an asset, scores it for authenticity, rewrites it into the brand's voice to strip AI tells, and re-scores it. You watch the authenticity score climb from "Reads AI" to "Reads human," with a playbook to run it.
-4. **Exports.** A full marketing plan (Markdown) and a branded pitch deck (PPTX), one click each.
+4. **Exports.** A full marketing plan (Markdown) and a branded pitch deck (PPTX), one click each. Any humanized asset can also be exported straight into **Google RSA, Meta, and Taboola** field formats, with live character-count checks a media buyer can paste in directly.
+
+Two extra ways in:
+- **Slop meter (`/check`).** Paste any existing ad, email, or landing copy and get an instant authenticity score, the exact AI tells found, and a humanized rewrite. No project needed.
+- **MCP server (`mcp/`).** The humanize and authenticity-score capabilities are also exposed as Model Context Protocol tools, so any AI coding agent (Claude Code, Cursor) can call `humanize` and `authenticity_score` directly. This is the "MCP connector" thread made real.
 
 ## Why I built THIS one
 
@@ -109,7 +113,9 @@ The recommendation engine is grounded in a verified "Future of Marketing in the 
 convex/           backend: schema, pipeline, assets, prompts, knowledge, deepseek client
 src/lib/          api surface, types, channel formats, export (md + pptx)
 src/lib/components DnaCard, ChannelCard, AssetCard, Gauge, Donut, DnaHelix, Icon
-src/routes/       landing, /new intake wizard, /p/[id] project workspace
+src/routes/       landing, /new intake wizard, /p/[id] workspace, /check slop meter
+convex/           + check.ts (slop meter), adformat.ts (ad-platform export)
+mcp/              standalone MCP server exposing humanize + authenticity_score
 ```
 
 See [ARCHITECTURE.md](ARCHITECTURE.md) for the data flow and [ABOUT.md](ABOUT.md) for the philosophy.

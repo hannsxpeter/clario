@@ -1,5 +1,7 @@
 <script lang="ts">
 	import type { CreativeAsset } from '$lib/appTypes';
+	import { useConvexClient } from 'convex-svelte';
+	import { api } from '$lib/api';
 	import Gauge from './Gauge.svelte';
 	import Icon from './Icon.svelte';
 
@@ -26,6 +28,40 @@
 		} catch {
 			/* clipboard unavailable */
 		}
+	}
+
+	const client = useConvexClient();
+	type AdFmt = { platform: string; fields: { label: string; value: string; limit: number }[]; notes: string };
+	let formats = $state<Record<string, AdFmt>>({});
+	let fmtLoading = $state<string | null>(null);
+	let fmtError = $state('');
+	let active = $state<string | null>(null);
+	const platforms = [
+		{ key: 'google', name: 'Google RSA' },
+		{ key: 'meta', name: 'Meta' },
+		{ key: 'taboola', name: 'Taboola' }
+	];
+
+	async function loadFormat(platform: string) {
+		if (fmtLoading) return;
+		fmtLoading = platform;
+		active = platform;
+		fmtError = '';
+		try {
+			const res = (await client.action(api.adformat.forPlatform, {
+				text: d.humanized,
+				platform
+			})) as AdFmt;
+			formats = { ...formats, [platform]: res };
+		} catch (e) {
+			fmtError = e instanceof Error ? e.message : 'Could not format.';
+		} finally {
+			fmtLoading = null;
+		}
+	}
+
+	function copyVal(v: string) {
+		navigator.clipboard?.writeText(v);
 	}
 </script>
 
@@ -91,6 +127,38 @@
 				<ol>{#each d.steps as s (s)}<li>{s}</li>{/each}</ol>
 			</details>
 		{/if}
+
+		<div class="adfmt">
+			<span class="adfmt-h"><Icon name="layers" size={13} /> Export for a platform</span>
+			<div class="adfmt-btns">
+				{#each platforms as p (p.key)}
+					<button class="adfmt-btn" class:on={active === p.key} onclick={() => loadFormat(p.key)} disabled={fmtLoading !== null}>
+						{#if fmtLoading === p.key}<Icon name="refresh" size={12} class="spin" />{/if}
+						{p.name}
+					</button>
+				{/each}
+			</div>
+			{#if fmtError}<div class="adfmt-err"><Icon name="alert" size={13} /> {fmtError}</div>{/if}
+			{#if active && formats[active]}
+				<div class="adfmt-fields">
+					{#each formats[active].fields as f (f.label + f.value)}
+						<div class="fld">
+							<div class="fld-top">
+								<span class="fld-label">{f.label}</span>
+								<div class="fld-right">
+									<span class="fld-count" class:over={f.limit ? f.value.length > f.limit : false}>
+										{f.value.length}{f.limit ? '/' + f.limit : ''}
+									</span>
+									<button class="fld-copy" onclick={() => copyVal(f.value)} aria-label="Copy field"><Icon name="copy" size={12} /></button>
+								</div>
+							</div>
+							<div class="fld-val">{f.value}</div>
+						</div>
+					{/each}
+					{#if formats[active].notes}<p class="adfmt-notes">{formats[active].notes}</p>{/if}
+				</div>
+			{/if}
+		</div>
 	{/if}
 </div>
 
@@ -234,5 +302,118 @@
 	}
 	.shimmer-text {
 		animation: pulse-soft 1.6s ease-in-out infinite;
+	}
+	.adfmt {
+		border-top: 1px solid var(--color-line);
+		padding-top: 0.9rem;
+		display: flex;
+		flex-direction: column;
+		gap: 0.7rem;
+	}
+	.adfmt-h {
+		display: flex;
+		align-items: center;
+		gap: 0.4rem;
+		font-family: var(--font-mono);
+		font-size: 0.7rem;
+		text-transform: uppercase;
+		letter-spacing: 0.08em;
+		color: var(--color-ink-muted);
+	}
+	.adfmt-btns {
+		display: flex;
+		gap: 0.4rem;
+		flex-wrap: wrap;
+	}
+	.adfmt-btn {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.35rem;
+		font-family: var(--font-mono);
+		font-size: 0.76rem;
+		padding: 0.35rem 0.7rem;
+		border: 1px solid var(--color-line-strong);
+		border-radius: 999px;
+		background: var(--color-paper);
+		color: var(--color-ink-soft);
+		cursor: pointer;
+	}
+	.adfmt-btn:hover:not(:disabled) {
+		border-color: var(--color-accent);
+		color: var(--color-accent-deep);
+	}
+	.adfmt-btn.on {
+		background: var(--color-ink);
+		color: var(--color-paper);
+		border-color: var(--color-ink);
+	}
+	.adfmt-btn:disabled {
+		opacity: 0.5;
+		cursor: default;
+	}
+	.adfmt-err {
+		display: flex;
+		align-items: center;
+		gap: 0.4rem;
+		color: var(--color-ai);
+		font-size: 0.82rem;
+	}
+	.adfmt-fields {
+		display: flex;
+		flex-direction: column;
+		gap: 0.5rem;
+	}
+	.fld {
+		background: var(--color-paper-sunken);
+		border-radius: var(--radius-sm);
+		padding: 0.5rem 0.7rem;
+	}
+	.fld-top {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		margin-bottom: 0.15rem;
+	}
+	.fld-label {
+		font-family: var(--font-mono);
+		font-size: 0.64rem;
+		text-transform: uppercase;
+		letter-spacing: 0.06em;
+		color: var(--color-ink-muted);
+	}
+	.fld-right {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+	}
+	.fld-count {
+		font-family: var(--font-mono);
+		font-size: 0.66rem;
+		color: var(--color-ink-muted);
+	}
+	.fld-count.over {
+		color: var(--color-ai);
+		font-weight: 600;
+	}
+	.fld-copy {
+		background: none;
+		border: none;
+		cursor: pointer;
+		color: var(--color-ink-muted);
+		padding: 0;
+		display: inline-flex;
+	}
+	.fld-copy:hover {
+		color: var(--color-accent);
+	}
+	.fld-val {
+		font-size: 0.9rem;
+		color: var(--color-ink);
+		line-height: 1.35;
+	}
+	.adfmt-notes {
+		font-size: 0.78rem;
+		color: var(--color-ink-muted);
+		font-style: italic;
 	}
 </style>
